@@ -1,8 +1,19 @@
 [ShiPanE]
 host=localhost
 port=8888
+key=
 
 [JoinQuant]
 username=
 password=
+backtest_id=
+
+[RiceQuant]
+username=
+password=
 backtestId=
+
+[Uqer]
+username=
+password=
+strategy=

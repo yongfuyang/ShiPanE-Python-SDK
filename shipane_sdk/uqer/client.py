@@ -5,19 +5,19 @@ from datetime import datetime
 import requests
 
 from shipane_sdk.base_quant_client import BaseQuantClient
-from shipane_sdk.joinquant.transaction import JoinQuantTransaction
+from shipane_sdk.uqer.transaction import UqerTransaction
 
 
-class JoinQuantClient(BaseQuantClient):
-    BASE_URL = 'https://www.joinquant.com'
+class UqerClient(BaseQuantClient):
+    BASE_URL = 'https://gw.wmcloud.com'
 
     def __init__(self, **kwargs):
-        super(JoinQuantClient, self).__init__('JoinQuant')
+        super(UqerClient, self).__init__('Uqer')
 
         self._session = requests.Session()
         self._username = kwargs.get('username', None)
         self._password = kwargs.get('password', None)
-        self._backtest_id = kwargs.get('backtest_id', None)
+        self.strategy = kwargs.get('strategy', None)
 
     def login(self):
         self._session.headers = {
@@ -31,29 +31,26 @@ class JoinQuantClient(BaseQuantClient):
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         }
         self._session.get(self.BASE_URL)
-        response = self._session.post('{}/user/login/doLogin?ajax=1'.format(self.BASE_URL), data={
-            'CyLoginForm[username]': self._username,
-            'CyLoginForm[pwd]': self._password,
-            'ajax': 1
+        response = self._session.post('{}/usermaster/authenticate/v1.json'.format(self.BASE_URL), data={
+            'username': self._username,
+            'password': self._password,
+            'rememberMe': 'false'
         })
         self._session.headers.update({
             'cookie': response.headers['Set-Cookie']
         })
 
-        super(JoinQuantClient, self).login()
+        super(UqerClient, self).login()
 
     def query(self):
         today_str = datetime.today().strftime('%Y-%m-%d')
-        response = self._session.get('{}/algorithm/live/transactionDetail'.format(self.BASE_URL), params={
-            'backtestId': self._backtest_id,
+        response = self._session.get('{}/mercury_trade/strategy/18551/order'.format(self.BASE_URL), params={
             'date': today_str,
-            'ajax': 1
         })
-        transaction_detail = response.json()
-        raw_transactions = transaction_detail['data']['transaction']
+        raw_transactions = response.json()
         transactions = []
         for raw_transaction in raw_transactions:
-            transaction = JoinQuantTransaction(raw_transaction).normalize()
+            transaction = UqerTransaction(raw_transaction).normalize()
             transactions.append(transaction)
 
         return transactions

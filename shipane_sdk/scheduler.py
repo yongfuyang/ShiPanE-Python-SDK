@@ -17,6 +17,7 @@ from shipane_sdk.jobs.new_stock_purchase import NewStockPurchaseJob
 from shipane_sdk.jobs.online_quant_following import OnlineQuantFollowingJob
 from shipane_sdk.joinquant.client import JoinQuantClient
 from shipane_sdk.ricequant.client import RiceQuantClient
+from shipane_sdk.uqer.client import UqerClient
 
 if six.PY2:
     ConfigParser = configparser.RawConfigParser
@@ -32,7 +33,7 @@ class Scheduler(object):
         config_path = os.path.join(os.path.expanduser('~'), '.shipane_sdk', 'config', 'scheduler.ini')
         self._logger.info('Config path: %s', config_path)
         self._config = ConfigParser()
-        self._config.readfp(codecs.open(config_path, "r", "utf_8_sig"))
+        self._config.readfp(codecs.open(config_path, encoding="utf_8_sig"))
 
         self._scheduler = BackgroundScheduler()
         self._client = Client(self._logger, **dict(self._config.items('ShiPanE')))
@@ -41,6 +42,7 @@ class Scheduler(object):
         self.__add_job(self.__create_new_stock_purchase_job())
         self.__add_job(self.__create_join_quant_following_job())
         self.__add_job(self.__create_rice_quant_following_job())
+        self.__add_job(self.__create_uqer_following_job())
 
         self._scheduler.start()
         print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
@@ -76,6 +78,14 @@ class Scheduler(object):
         options = self.__build_options(section)
         client_aliases = self.__filter_client_aliases(section)
         quant_client = RiceQuantClient(**options)
+        return OnlineQuantFollowingJob(self._client, quant_client, client_aliases, '{}FollowingJob'.format(section),
+                                       **options)
+
+    def __create_uqer_following_job(self):
+        section = 'Uqer'
+        options = self.__build_options(section)
+        client_aliases = self.__filter_client_aliases(section)
+        quant_client = UqerClient(**options)
         return OnlineQuantFollowingJob(self._client, quant_client, client_aliases, '{}FollowingJob'.format(section),
                                        **options)
 
